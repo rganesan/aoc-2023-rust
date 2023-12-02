@@ -26,10 +26,10 @@ fn part1(filename: &str) -> Result<u32> {
     'game: for line in reader.lines() {
         let line = line?;
         // Format: "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
-        let (hdr, games) = line.split_once(':').unwrap();
+        let (hdr, game_plays) = line.split_once(':').unwrap();
         let game_id = hdr[5..].parse::<u32>()?;
-        for game in games.split(';') {
-            let cubeset = parse_cubeset(game);
+        for game_play in game_plays.split(';') {
+            let cubeset = parse_cubeset(game_play);
             for (bag, cube) in CUBE_BAG.iter().zip(cubeset.iter()) {
                 if bag < cube {
                     // this game is impossible
@@ -49,10 +49,10 @@ fn part2(filename: &str) -> Result<u32> {
     for line in reader.lines() {
         let line = line?;
         // Format: "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
-        let (_hdr, games) = line.split_once(':').unwrap();
+        let (_hdr, game_plays) = line.split_once(':').unwrap();
         let mut min_cubeset = [0, 0, 0];
-        for game in games.split(';') {
-            let cubeset = parse_cubeset(game);
+        for game_play in game_plays.split(';') {
+            let cubeset = parse_cubeset(game_play);
             for (min_color, color) in min_cubeset.iter_mut().zip(cubeset.iter()) {
                 *min_color = max(*min_color, *color);
             }
