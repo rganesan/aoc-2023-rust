@@ -27,7 +27,6 @@ fn part1(filename: &str) -> Result<u32> {
         let line = line?;
         // Format: "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
         let (hdr, game_plays) = line.split_once(':').unwrap();
-        let game_id = hdr[5..].parse::<u32>()?;
         for game_play in game_plays.split(';') {
             let cubeset = parse_cubeset(game_play);
             for (bag, cube) in CUBE_BAG.iter().zip(cubeset.iter()) {
@@ -37,6 +36,7 @@ fn part1(filename: &str) -> Result<u32> {
                 }
             }
         }
+        let game_id = hdr[5..].parse::<u32>()?;
         sum += game_id;
     }
     Ok(sum)
