@@ -23,24 +23,21 @@ fn part1(filename: &str) -> Result<u32> {
     let reader = BufReader::new(file);
     let mut sum = 0;
     const CUBE_BAG: [u32; 3] = [12, 13, 14]; // Number of red, green, blue in bag
-    for line in reader.lines() {
+    'game: for line in reader.lines() {
         let line = line?;
         // Format: "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green"
         let (hdr, games) = line.split_once(':').unwrap();
         let game_id = hdr[5..].parse::<u32>()?;
-        let mut game_possible = true;
-        'game: for game in games.split(';') {
+        for game in games.split(';') {
             let cubeset = parse_cubeset(game);
             for (bag, cube) in CUBE_BAG.iter().zip(cubeset.iter()) {
                 if bag < cube {
-                    game_possible = false;
-                    break 'game;
+                    // this game is impossible
+                    continue 'game;
                 }
             }
         }
-        if game_possible {
-            sum += game_id;
-        }
+        sum += game_id;
     }
     Ok(sum)
 }
