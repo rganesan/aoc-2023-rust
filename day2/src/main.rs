@@ -87,3 +87,15 @@ fn main() -> Result<()> {
     println!("part2: {sum2}, time: {duration2:?}");
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{part1, part2};
+
+    #[test]
+    fn test() {
+        let example = "src/inputs/test1.txt";
+        assert_eq!(8, part1(example).unwrap());
+        assert_eq!(2286, part2(example).unwrap());
+    }
+}
