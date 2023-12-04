@@ -8,6 +8,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 type Schematic = Vec<String>;
+
 #[derive(Debug)]
 struct PartNumber {
     row: usize,
@@ -37,28 +38,26 @@ fn parse_part_numbers(schematic: &Schematic) -> Vec<PartNumber> {
 fn part1(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
     let mut sum = 0;
     'part_number: for pn in part_numbers {
-        //println!("{}", schematic[pn.row]);
         let cur_row = schematic[pn.row].as_bytes();
         if pn.start > 0 {
             let left = cur_row[pn.start - 1];
             if left != b'.' {
                 // found a symbol
                 sum += pn.num;
-                println!("part number: {}", pn.num);
+                // println!("part number: {}", pn.num);
                 continue;
             }
         }
-        if pn.end < schematic[pn.row].len() - 1 {
+        if pn.end < schematic[pn.row].len() {
             let right = cur_row[pn.end];
             if right != b'.' {
                 // found a symbol
                 sum += pn.num;
-                println!("part number: {}", pn.num);
+                // println!("part number: {}", pn.num);
                 continue;
             }
         }
         if pn.row > 0 {
-            // println!("{}", schematic[pn.row - 1]);
             let prev_row = schematic[pn.row - 1].as_bytes();
             let start = if pn.start > 0 { pn.start - 1 } else { pn.start };
             let end = if pn.end < prev_row.len() - 1 { pn.end + 1 } else { pn.end };
@@ -67,7 +66,7 @@ fn part1(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
                 if c != b'.' && !c.is_ascii_digit() {
                     // found a symbol
                     sum += pn.num;
-                    println!("part number: {}", pn.num);
+                    // println!("part number: {}", pn.num);
                     continue 'part_number;
                 }
             }
@@ -82,7 +81,7 @@ fn part1(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
                 if c != b'.' && !c.is_ascii_digit() {
                     // found a symbol
                     sum += pn.num;
-                    println!("part number: {}", pn.num);
+                    // println!("part number: {}", pn.num);
                     continue 'part_number;
                 }
             }
@@ -93,15 +92,17 @@ fn part1(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
 
 fn part2(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
     let mut sum = 0;
-    let mut _parts_idx = 0;
     for (r, line) in schematic.iter().enumerate() {
         for (c, ch) in line.bytes().enumerate() {
             if ch != b'*' {
                 continue;
             }
-            println!("{r},{c}: *");
+            // println!("{r},{c}: *");
             let mut adjacents = Vec::with_capacity(2);
             for pn in part_numbers {
+                if r > 1 && pn.row < r - 1 {
+                    continue;   // this row cannot be adjacent
+                }
                 let start = if pn.start > 0 { pn.start - 1 } else { pn.start };
                 let end = if pn.end > line.len() - 1 { pn.end + 1 } else { pn.end };
                 if r > 0 && pn.row == r - 1 {
@@ -110,11 +111,12 @@ fn part2(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
                         adjacents.push(pn.num);
                     }
                 } else if pn.row == r {
+                    // current row
                     if pn.start == c + 1 || pn.end == c {
                         adjacents.push(pn.num);
                     }
                 } else if pn.row == r + 1 {
-                    // previous row
+                    // next row
                     if start <= c && end >= c {
                         adjacents.push(pn.num);
                     }
@@ -123,7 +125,7 @@ fn part2(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
                     break;
                 }
             }
-            println!("{adjacents:?}");
+            // println!("{adjacents:?}");
             if adjacents.len() == 2 {
                 sum += adjacents[0] * adjacents[1]
             }
