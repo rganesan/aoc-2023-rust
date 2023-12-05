@@ -86,15 +86,41 @@ fn part1(seeds: &Seeds, maps: &Vec<Maps>) -> usize {
         .unwrap()
 }
 
+fn seed_range_to_min_location(seed: usize, len: usize, maps: &Vec<Maps>) -> usize {
+    let mut min_mapping = usize::MAX;
+    let mut s = seed;
+    while s < seed + len {
+        let mut mapping = s;
+        let mut min_span = usize::MAX;
+        for map in maps {
+            // print!("{mapping} -> ");
+            for m in map {
+                if mapping >= m.src && mapping < m.src + m.len {
+                    let remaining_span = m.len - (mapping - m.src);
+                    println!("seed {s} remaining_span {remaining_span}");
+                    if m.len < min_span {
+                        min_span = remaining_span;
+                    }
+                    mapping = m.dest + mapping - m.src;
+                    break;
+                }
+            }
+            println!("seed {s}, mapping {mapping} min_span {min_span}");
+        }
+        s += min_span;
+        if mapping < min_mapping {
+            min_mapping = mapping;
+        }
+    }
+    println!("seed: {seed}, location: {min_mapping}");
+    min_mapping
+}
+
 fn part2(seeds: &Seeds, maps: &Vec<Maps>) -> usize {
     let mut min = usize::MAX;
     for seed_and_len in seeds.chunks_exact(2) {
         let (seed, len) = (seed_and_len[0], seed_and_len[1]);
-        let min_of_range = (seed..(seed + len - 1))
-            .map(|s| map_seed_to_location(s, maps))
-            .min()
-            .unwrap();
-        println!("seed: {seed}, len: {len}, min location: {min_of_range}");
+        let min_of_range = seed_range_to_min_location(seed, len, maps);
         if min_of_range < min {
             min = min_of_range;
         }
@@ -110,7 +136,7 @@ fn main() -> Result<()> {
     let (seeds, maps) = parse_almanac(&filename)?;
 
     let start1 = Instant::now();
-    let sum1 = part1(&seeds, &maps);
+    let sum1 = 0; // part1(&seeds, &maps);
     let duration1 = start1.elapsed();
     println!("part1: {sum1}, time: {duration1:?}");
 
