@@ -38,32 +38,28 @@ fn parse_part_numbers(schematic: &Schematic) -> Vec<PartNumber> {
 fn part1(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
     let mut sum = 0;
     'part_number: for pn in part_numbers {
+        // check to the left and right in current row
         let cur_row = schematic[pn.row].as_bytes();
-        if pn.start > 0 {
-            let left = cur_row[pn.start - 1];
-            if left != b'.' {
-                // found a symbol
-                sum += pn.num;
-                // println!("part number: {}", pn.num);
-                continue;
-            }
+        if pn.start > 0 && cur_row[pn.start - 1] != b'.' { // left
+            sum += pn.num;
+            // println!("part number: {}", pn.num);
+            continue;
         }
-        if pn.end < schematic[pn.row].len() {
-            let right = cur_row[pn.end];
-            if right != b'.' {
-                // found a symbol
-                sum += pn.num;
-                // println!("part number: {}", pn.num);
-                continue;
-            }
+        if pn.end < schematic[pn.row].len() && cur_row[pn.end] != b'.' { // right
+            sum += pn.num;
+            // println!("part number: {}", pn.num);
+            continue;
         }
+        
+        // For prev and next row, we need to check -/+ one to account for diagonal
+        let start = if pn.start > 0 { pn.start - 1 } else { pn.start };
+        let end = if pn.end < cur_row.len() - 1 { pn.end + 1 } else { pn.end };
+        
+        // check previous row
         if pn.row > 0 {
             let prev_row = schematic[pn.row - 1].as_bytes();
-            let start = if pn.start > 0 { pn.start - 1 } else { pn.start };
-            let end = if pn.end < prev_row.len() - 1 { pn.end + 1 } else { pn.end };
-            for i in start..end {
-                let c = prev_row[i];
-                if c != b'.' && !c.is_ascii_digit() {
+            for c in &prev_row[start..end] {
+                if *c != b'.' && !c.is_ascii_digit() {
                     // found a symbol
                     sum += pn.num;
                     // println!("part number: {}", pn.num);
@@ -71,14 +67,11 @@ fn part1(schematic: &Schematic, part_numbers: &Vec<PartNumber>) -> usize {
                 }
             }
         }
+        // check next row
         if pn.row < schematic.len() - 1 {
-            // println!("{}", schematic[pn.row + 1]);
             let next_row = schematic[pn.row + 1].as_bytes();
-            let start = if pn.start > 0 { pn.start - 1 } else { pn.start };
-            let end = if pn.end < next_row.len() - 1 { pn.end + 1 } else { pn.end };
-            for i in start..end {
-                let c = next_row[i];
-                if c != b'.' && !c.is_ascii_digit() {
+            for c in &next_row[start..end] {
+                if *c != b'.' && !c.is_ascii_digit() {
                     // found a symbol
                     sum += pn.num;
                     // println!("part number: {}", pn.num);
