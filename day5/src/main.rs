@@ -6,12 +6,12 @@ use std::time::Instant;
 
 #[derive(Debug)]
 struct Map {
-    dest: u32,
-    src: u32,
-    len: u32,
+    dest: usize,
+    src: usize,
+    len: usize,
 }
 
-type Seeds = Vec<u32>;
+type Seeds = Vec<usize>;
 type Maps = Vec<Map>;
 
 fn parse_almanac(filename: &str) -> Result<(Seeds, Vec<Maps>)> {
@@ -22,46 +22,84 @@ fn parse_almanac(filename: &str) -> Result<(Seeds, Vec<Maps>)> {
     let reader = BufReader::new(file);
 
     let mut map = Vec::new();
-    let mut mapping = String::new();
+    let mut in_mapping = false;
     for line in reader.lines() {
         let line = line?;
-	println!("{line}");
-	if line.is_empty() {
-	    maps.push(map);
-	    map = Vec::new();
-	    continue;
-	}
-	match line.split_once(':') {
-	    Some(("seeds", seed_str)) => {
-		seeds = seed_str.split_whitespace().
-		map( |s| s.parse::<u32>().unwrap()).collect();
-	    },
-	    Some((mapping, _)) => {
-		println!("{mapping}");
-	    },
-	    None => {		// we're in a mapping
-		let mut map_iter = line.split_whitespace().
-		    map( |s| s.parse::<u32>().unwrap());
-		let dest = map_iter.next().unwrap();
-		let src = map_iter.next().unwrap();
-		let len = map_iter.next().unwrap();
-		map.push(Map{ dest, src, len });
-	    },
-	}
-    };
+        // println!("{line}");
+        if line.is_empty() {
+            if in_mapping {
+                maps.push(map);
+                map = Vec::new();
+                in_mapping = false;
+            }
+            continue;
+        }
+        match line.split_once(':') {
+            Some(("seeds", seed_str)) => {
+                seeds = seed_str
+                    .split_whitespace()
+                    .map(|s| s.parse::<usize>().unwrap())
+                    .collect();
+            }
+            Some((_mapping, _)) => {
+                // println!("{_mapping}");
+                in_mapping = true;
+            }
+            None => {
+                // we're in a mapping
+                let mut map_iter = line.split_whitespace().map(|s| s.parse::<usize>().unwrap());
+                let dest = map_iter.next().unwrap();
+                let src = map_iter.next().unwrap();
+                let len = map_iter.next().unwrap();
+                map.push(Map { dest, src, len });
+            }
+        }
+    }
+    if !map.is_empty() {
+        maps.push(map);
+    }
     Ok((seeds, maps))
 }
 
-fn part1(seeds: &Seeds, maps: &Vec<Maps>) -> u32 {
-    let mut sum = 0;
-    println!("{seeds:?} {maps:?}");
-    sum
+fn map_seed_to_location(seed: usize, maps: &Vec<Maps>) -> usize {
+    let mut mapping = seed;
+    for map in maps {
+        // print!("{mapping} -> ");
+        for m in map {
+            if mapping >= m.src && mapping < m.src + m.len {
+                mapping = m.dest + mapping - m.src;
+                break;
+            }
+        }
+        // println!("{mapping}");
+    }
+    println!("seed: {seed}, location: {mapping}");
+    mapping
 }
 
-fn part2(seeds: &Seeds, maps: &Vec<Maps>) -> u32 {
-    let mut sum = 0;
-    println!("{seeds:?} {maps:?}");
-    sum
+fn part1(seeds: &Seeds, maps: &Vec<Maps>) -> usize {
+    // println!("{seeds:?} {maps:?}");
+    seeds
+        .iter()
+        .map(|&s| map_seed_to_location(s, maps))
+        .min()
+        .unwrap()
+}
+
+fn part2(seeds: &Seeds, maps: &Vec<Maps>) -> usize {
+    let mut min = usize::MAX;
+    for seed_and_len in seeds.chunks_exact(2) {
+        let (seed, len) = (seed_and_len[0], seed_and_len[1]);
+        let min_of_range = (seed..(seed + len - 1))
+            .map(|s| map_seed_to_location(s, maps))
+            .min()
+            .unwrap();
+        println!("seed: {seed}, len: {len}, min location: {min_of_range}");
+        if min_of_range < min {
+            min = min_of_range;
+        }
+    }
+    min
 }
 
 fn main() -> Result<()> {
