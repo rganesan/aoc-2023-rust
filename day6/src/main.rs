@@ -74,24 +74,20 @@ fn parse_race_records2(filename: &str) -> Result<(usize, usize)> {
     Ok((time, record))
 }
 
-fn part1(times: &[u32], records: &[u32]) -> usize {
+fn part1(times: &[u32], records: &[u32]) -> u32 {
     times
         .iter()
         .zip(records.iter())
         .map(|(&time, &record)| {
-            (1..time)
-                .skip_while(|t| (time - t) * t <= record)
-                .take_while(|t| (time - t) * t > record)
-                .count()
+            (1..time).rev().find(|t| (time - t) * t > record).unwrap() -
+            (1..time).find(|t| (time - t) * t > record).unwrap()
         })
         .product()
 }
 
 fn part2(time: usize, record: usize) -> usize {
-    (1..time)
-        .skip_while(|t| (time - t) * t <= record)
-        .take_while(|t| (time - t) * t > record)
-        .count()
+    (1..time).rev().find(|t| (time - t) * t > record).unwrap() -
+        (1..time).find(|t| (time - t) * t > record).unwrap()
 }
 
 fn main() -> Result<()> {
