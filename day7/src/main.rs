@@ -55,28 +55,19 @@ fn poker_score(hand: &[u8], joker: bool) -> u8 {
         counts[max_idx] += jokers;
     }
 
-    // strip the zeros so contains() is faster. This doesn't really
-    // seem to make any difference in performance.
     let mut counts = counts.to_vec();
     counts.retain(|&v| v != 0);
+    counts.sort();
 
     // Score hands from 7 to 1
-    let score = if counts.contains(&5) {
-        HandType::FiveOfKind
-    } else if counts.contains(&4) {
-        HandType::FourOfKind
-    } else if counts.contains(&3) {
-        if counts.contains(&2) {
-            HandType::FullHouse
-        } else {
-            HandType::ThreeOfKind
-        }
-    } else {
-        match counts.iter().filter(|&&v| v == 2).count() {
-            2 => HandType::TwoPair,
-            1 => HandType::OnePair,
-            _ => HandType::HighCard,
-        }
+    let score = match counts[..] {
+        [5] => HandType::FiveOfKind,
+        [1, 4] => HandType::FourOfKind,
+        [2, 3] => HandType::FullHouse,
+        [1, 1, 3] => HandType::ThreeOfKind,
+        [1, 2, 2] => HandType::TwoPair,
+        [1, 1, 1, 2] => HandType::OnePair,
+        _ => HandType::HighCard,
     };
     score as u8
 }
