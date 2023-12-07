@@ -12,6 +12,16 @@ struct CardHand {
     score2: u32, // With joker
 }
 
+enum HandType {
+    HighCard = 1,
+    OnePair = 2,
+    TwoPair = 3,
+    ThreeOfKind = 4,
+    FullHouse = 5,
+    FourOfKind = 6,
+    FiveOfKind = 7,
+}
+
 impl fmt::Debug for CardHand {
     // Custom Debug formatter so [u8; 5] is printed as a string
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -26,7 +36,7 @@ impl fmt::Debug for CardHand {
     }
 }
 
-fn poker_score(hand: &[u8], joker: bool) -> u32 {
+fn poker_score(hand: &[u8], joker: bool) -> u8 {
     const JOKER: usize = 0xb;
     let mut counts = [0u8; 16];
     let mut max = 0;
@@ -51,23 +61,24 @@ fn poker_score(hand: &[u8], joker: bool) -> u32 {
     counts.retain(|&v| v != 0);
 
     // Score hands from 7 to 1
-    if counts.contains(&5) {
-        7 // Five of a kind
+    let score = if counts.contains(&5) {
+        HandType::FiveOfKind
     } else if counts.contains(&4) {
-        6 // Four of a kind
+        HandType::FourOfKind
     } else if counts.contains(&3) {
         if counts.contains(&2) {
-            5 // Full house
+            HandType::FullHouse
         } else {
-            4 // Three of a kind
+            HandType::ThreeOfKind
         }
     } else {
         match counts.iter().filter(|&&v| v == 2).count() {
-            2 => 3, // Two pair
-            1 => 2, // One pair
-            _ => 1, // (High card) all different
+            2 => HandType::TwoPair,
+            1 => HandType::OnePair,
+            _ => HandType::HighCard,
         }
-    }
+    };
+    score as u8
 }
 
 fn score(hand: &[u8], joker: bool) -> u32 {
@@ -85,7 +96,7 @@ fn score(hand: &[u8], joker: bool) -> u32 {
         .collect::<Vec<u8>>()
         .try_into()
         .unwrap();
-    let mut score = poker_score(&hand, joker);
+    let mut score = poker_score(&hand, joker) as u32;
     // shift the bytes into a u32 so we can simply do a numeric comparison.
     score = hand.iter().fold(score, |score, &b| {
         (score << 4) | if joker && b == 0xb { 0 } else { b as u32 }
