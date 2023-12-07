@@ -7,9 +7,9 @@ use std::time::Instant;
 
 struct CardHand {
     hand: [u8; 5],
-    bid: u32,
-    score1: usize, // No joker
-    score2: usize, // With joker
+    bid: u16,
+    score1: u32, // No joker
+    score2: u32, // With joker
 }
 
 impl fmt::Debug for CardHand {
@@ -17,7 +17,7 @@ impl fmt::Debug for CardHand {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{}: {:4}, 0x{:012x}, 0x{:012x}",
+            "{}: {:4}, 0x{:06x}, 0x{:06x}",
             std::str::from_utf8(&self.hand).expect("invalid sequence"),
             self.bid,
             self.score1,
@@ -26,26 +26,29 @@ impl fmt::Debug for CardHand {
     }
 }
 
-fn poker_score(hand: &[u8], joker: bool) -> usize {
-    let mut counts = [0u8; 256];
+fn poker_score(hand: &[u8], joker: bool) -> u32 {
+    const JOKER: usize = 0xb;
+    let mut counts = [0u8; 16];
     let mut max = 0;
     let mut max_idx = 0;
     for c in hand {
         let idx = *c as usize;
         counts[idx] += 1;
-        if joker && *c != b'J' && counts[idx] > max {
+        if joker && idx != JOKER && counts[idx] > max {
             max = counts[idx];
             max_idx = idx;
         }
     }
-    let jokers = counts['J' as usize];
+    let jokers = counts[JOKER];
     if joker && jokers != 5 {
-        counts['J' as usize] = 0;
+        counts[JOKER] = 0;
         counts[max_idx] += jokers;
     }
 
-    // trim the array so contains() is faster
-    let counts = counts.into_iter().filter(|&c| c != 0).collect::<Vec<_>>();
+    // strip the zeros so contains() is faster. This doesn't really
+    // seem to make any difference in performance.
+    let mut counts = counts.to_vec();
+    counts.retain(|&v| v != 0);
 
     // Score hands from 7 to 1
     if counts.contains(&5) {
@@ -67,27 +70,26 @@ fn poker_score(hand: &[u8], joker: bool) -> usize {
     }
 }
 
-fn score(hand: &[u8], joker: bool) -> usize {
-    let mut score = poker_score(hand, joker);
-    // shift the bytes into a usize so we can simply do a numeric comparison.
-    // Special handling for 'T', 'J', 'Q', 'K' for correct 'strength'
-    for b in hand {
-        score = (score << 8)
-            | match b {
-                b'T' => 0xa,
-                b'J' => {
-                    if joker {
-                        0 // joker counts as least
-                    } else {
-                        0xb
-                    }
-                }
-                b'Q' => 0xc,
-                b'K' => 0xd,
-                b'A' => 0xe,
-                _ => *b - b'0',
-            } as usize;
-    }
+fn score(hand: &[u8], joker: bool) -> u32 {
+    // Convert hand to hex for easier scoring
+    let hand: [u8; 5] = hand
+        .iter()
+        .map(|b| match b {
+            b'T' => 0xa,
+            b'J' => 0xb,
+            b'Q' => 0xc,
+            b'K' => 0xd,
+            b'A' => 0xe,
+            _ => *b - b'0',
+        })
+        .collect::<Vec<u8>>()
+        .try_into()
+        .unwrap();
+    let mut score = poker_score(&hand, joker);
+    // shift the bytes into a u32 so we can simply do a numeric comparison.
+    score = hand.iter().fold(score, |score, &b| {
+        (score << 4) | if joker && b == 0xb { 0 } else { b as u32 }
+    });
     score
 }
 
@@ -116,27 +118,27 @@ fn parse_and_score_card_hands(filename: &str) -> Result<Vec<CardHand>> {
             }
         })
         .collect();
-    card_hands
+    Ok(card_hands)
 }
 
-fn part1(card_hands: &mut Vec<CardHand>) -> usize {
+fn get_winnings(sorted_card_hands: &[CardHand]) -> usize {
+    sorted_card_hands
+        .iter()
+        .enumerate()
+        .map(|(i, hand)| (i + 1) * hand.bid as usize)
+        .sum()
+}
+
+fn part1(card_hands: &mut [CardHand]) -> usize {
     card_hands.sort_by(|a, b| a.score1.cmp(&b.score1));
     // println!("{card_hands:#?}");
-    card_hands
-        .iter()
-        .enumerate()
-        .map(|(i, hand)| (i + 1) * hand.bid as usize)
-        .sum()
+    get_winnings(card_hands)
 }
 
-fn part2(card_hands: &mut Vec<CardHand>) -> usize {
+fn part2(card_hands: &mut [CardHand]) -> usize {
     card_hands.sort_by(|a, b| a.score2.cmp(&b.score2));
     // println!("{card_hands:#?}");
-    card_hands
-        .iter()
-        .enumerate()
-        .map(|(i, hand)| (i + 1) * hand.bid as usize)
-        .sum()
+    get_winnings(card_hands)
 }
 
 fn main() -> Result<()> {
@@ -144,7 +146,10 @@ fn main() -> Result<()> {
         .nth(1)
         .unwrap_or_else(|| "inputs/test1.txt".to_string());
 
+    let start = Instant::now();
     let mut card_hands = parse_and_score_card_hands(&filename)?;
+    let duration = start.elapsed();
+    println!("parsing time: {duration:?}");
 
     let start1 = Instant::now();
     let sum1 = part1(&mut card_hands);
