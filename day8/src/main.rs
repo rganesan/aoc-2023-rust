@@ -21,7 +21,7 @@ fn parse_map(filename: &str) -> Result<(Route,Map)> {
 
     for line in reader.lines() {
         let line = line?;
-        println!("{line}");
+        // println!("{line}");
 	if line.is_empty() {
 	    continue;
 	}
@@ -34,7 +34,7 @@ fn parse_map(filename: &str) -> Result<(Route,Map)> {
 	let (left, right) = left_right.split_once(",").unwrap();
 	let left = left[2..].to_owned();
  	let right = right[1..right.len()-1].to_owned();
-	println!("{node}: ({left}, {right})");
+	// println!("{node}: ({left}, {right})");
 	map.insert(node, (left, right));
     }
     Ok((route, map))
@@ -61,9 +61,11 @@ fn part2(route: &str, map: &Map) -> usize {
 	    let (left, right) = &map[node];
 	    if r == 'L' { left } else { right }	    
 	}).collect();
-	println!("{nodes:?}");
-	if nodes.iter().filter(|&node| node.ends_with('Z')).count() == nodes.len() {
-	    return i + 1;
+	if terminals > 0 {
+	    println!("{} {nodes:?}", i + 1);
+            if terminals == nodes.len() {
+	        return i + 1;
+            }
 	}
     }
     0
