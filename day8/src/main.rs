@@ -44,7 +44,6 @@ fn part1(route: &str, map: &Map) -> usize {
     let mut node = START;
     for (i, r) in route.chars().cycle().enumerate() {
 	let (left, right) = &map[node];
-	// println!("cur: {cur}, route: {r}, left: {left}, right: {right}");
 	node = if r == 'L' { left } else { right };
 	if node == TERMINAL {
 	    return i + 1;
@@ -53,22 +52,43 @@ fn part1(route: &str, map: &Map) -> usize {
     0
 }
 
+fn gcd(a: usize, b: usize) -> usize {
+    let mut a = a;
+    let mut b = b;
+
+    while b > 0 {
+        let remainder = a % b;
+        a = b;
+        b = remainder;
+    }
+    a
+}
+
 fn part2(route: &str, map: &Map) -> usize {
     let mut nodes = map.keys().filter(|node| node.ends_with('A')).collect::<Vec<_>>();
-    println!("{nodes:?}");
+    let mut steps_to_terminal = Vec::new();
+
+    // collect how long it takes reach the terminal for each node
     for (i, r) in route.chars().cycle().enumerate() {
 	nodes = nodes.iter().map(|&node| {
 	    let (left, right) = &map[node];
 	    if r == 'L' { left } else { right }	    
 	}).collect();
-	if terminals > 0 {
-	    println!("{} {nodes:?}", i + 1);
-            if terminals == nodes.len() {
-	        return i + 1;
+        if let Some(pos) = nodes.iter().position(|&node| node.ends_with('Z')) {
+            steps_to_terminal.push(i + 1);
+            nodes.remove(pos);
+            if nodes.is_empty() {
+                break;
             }
-	}
+        }
     }
-    0
+
+    // now get the LCM because the paths keep cycling
+    let mut lcm = steps_to_terminal[0];
+    for v in &steps_to_terminal[1..] {
+        lcm = lcm * *v / gcd(lcm, *v);
+    }
+    lcm
 }
 
 fn main() -> Result<()> {
@@ -79,7 +99,7 @@ fn main() -> Result<()> {
     let (route, map) = parse_map(&filename)?;
 
     let start1 = Instant::now();
-    let sum1 = 0; // part1(&route, &map);
+    let sum1 = part1(&route, &map);
     let duration1 = start1.elapsed();
     println!("part1: {sum1}, time: {duration1:?}");
 
