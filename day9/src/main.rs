@@ -48,15 +48,22 @@ fn part2(sensor_readings: &[Vec<i32>]) -> i32 {
             .windows(2)
             .map(|w| w[1] - w[0])
             .collect::<Vec<_>>();
-        let mut first_diffs = Vec::new();
+        
+        // If a, b, c, d, e are the first values in the differences, the final diff
+        // to subtract from the first element in the sequence works out to
+        // (a - (b - (c - (d - e))). This can be simplifed to a - b + c - d + e,
+        // so essentially flipping the sign and adding first values instead of
+        // storing the first values and computing this later.
+        let mut diff_sum = 0;
+        let mut sign_flip = 1;
         while diffs.iter().filter(|&&v| v == 0).count() != diffs.len() {
             // println!("{diffs:?}");
-            first_diffs.push(*diffs.first().unwrap());
+            diff_sum += sign_flip * diffs.first().unwrap();
+            sign_flip = -sign_flip;
             diffs = diffs.windows(2).map(|w| w[1] - w[0]).collect();
         }
-        let prev_diff = first_diffs.iter().rev().fold(0, |acc, v| v - acc);
-        let prev = reading_history.first().unwrap() - prev_diff;
-        // println!("first_diffs: {first_diffs:?}, prev_diff: {prev_diff} prev: {prev}");
+        let prev = reading_history.first().unwrap() - diff_sum;
+        // println!("diff_sum: {diff_sum:?}, prev: {prev}");
         sum += prev;
     }
     sum
@@ -92,15 +99,15 @@ mod tests {
     fn test_sample() {
         let filename = "src/inputs/test1.txt";
         let sensor_readings = parse_sensor_readings(&filename).unwrap();
-        assert_eq!(288, part1(&sensor_readings));
-        assert_eq!(71503, part2(&sensor_readings));
+        assert_eq!(114, part1(&sensor_readings));
+        assert_eq!(2, part2(&sensor_readings));
     }
 
     #[test]
     fn test_solution() {
         let filename = "src/inputs/input.txt";
         let sensor_readings = parse_sensor_readings(&filename).unwrap();
-        assert_eq!(288, part1(&sensor_readings));
-        assert_eq!(71503, part2(&sensor_readings));
+        assert_eq!(1955513104, part1(&sensor_readings));
+        assert_eq!(1131, part2(&sensor_readings));
     }
 }
